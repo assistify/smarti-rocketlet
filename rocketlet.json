@@ -1,0 +1,14 @@
+{
+    "id": "382f709e-6f14-4544-a09f-88aa7f3036f3",
+    "name": "Smarti Integration",
+    "nameSlug": "smarti-integration",
+    "description": "Integrates Smarti, an NLP-tool for conversations, as knowledge base",
+    "version": "1.0.0",
+    "requiredApiVersion": ">=0.6.20",
+    "author": {
+        "name": "Oliver Jägle",
+        "homepage": "https://github.com/assistify/smarti-rocketlet",
+        "support": "https://github.com/assistify/smarti-rocketlet/issues"
+    },
+    "classFile": "SmartiRocketlet.ts"
+}
