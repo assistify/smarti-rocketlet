@@ -1,6 +1,9 @@
 // tslint:disable:max-classes-per-file
+import { Conversation, Message } from '../api';
+
 import {
-    IEnvironmentRead, IExecutionResult, IHttp, IHttpRequest, ILogEntry, IPersistence, IRead, LogMessageSeverity,
+    IEnvironmentRead, IExecutionResult, IHttp, IHttpRequest, ILogEntry, IMessageRead, IPersistence, IRead, IRoomRead,
+    LogMessageSeverity,
 } from 'temporary-rocketlets-ts-definition/accessors';
 import { IMessage, IPostMessageSentHandler } from 'temporary-rocketlets-ts-definition/messages';
 import { IRoom } from 'temporary-rocketlets-ts-definition/rooms';
@@ -43,12 +46,32 @@ class ForwardConversationExecutionResult implements IExecutionResult {
 class ForwardConversationHttpRequest implements IHttpRequest {
     public data: object;
 
-    constructor(room: IRoom) {
-        this.data = this.getConversation(room);
+    constructor(room: IRoom, roomReader: IRoomRead) {
+        this.data = this.getConversation(room, roomReader);
     }
 
-    private getConversation(room: IRoom) {
-        return {}; // todo
+    private getConversation(room: IRoom, roomReader: IRoomRead): Conversation {
+
+        const messagesIterator = roomReader.getMessages(room.id);
+        const conversation = new Conversation();
+
+        while (messagesIterator.hasMore()) {
+            let message: IMessage;
+
+            message = messagesIterator.next().value;
+            if (message.id && message.text && message.createdAt && message.sender) {
+                conversation.messages.push({
+                    id: message.id,
+                    content: message.text,
+                    time: message.createdAt,
+                    origin: ( message.sender === room.creator ) ? Message.OriginEnum.User : Message.OriginEnum.Agent,
+                    user: { id: message.sender.id },
+                    private: false,
+                });
+            }
+        }
+
+        return conversation;
     }
 }
 
@@ -61,7 +84,7 @@ export class ForwardConversationPostMessageSent implements IPostMessageSentHandl
 
     // tslint:disable-next-line:max-line-length
     public executePostMessageSent(message: IMessage, read: IRead, http: IHttp, persistence: IPersistence): IExecutionResult {
-        const response = http.post(this.hostUrl, new ForwardConversationHttpRequest(message.room));
+        const response = http.post(this.hostUrl, new ForwardConversationHttpRequest(message.room, read.getRoomReader()));
 
         if (response.statusCode === HTTP_STATUS_CODES.OK) {
             return new ForwardConversationExecutionResult(true, message.room.id);
